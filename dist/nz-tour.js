@@ -258,7 +258,7 @@
         }
     }]);
 
-    module.directive('nzTour', ["$q", "$compile", "$document", "$timeout", function($q, $compile, $document, $timeout) {
+    module.directive('nzTour', ["$q", "$compile", "$document", "$timeout", "$window", function($q, $compile, $document, $timeout, $window) {
         return {
             template: [
                 '<div id="nzTour-box-wrap">',
@@ -368,14 +368,15 @@
                 // Step Update Listener
                 
                 // Thottle for 60fps
-//                onWindowScrollDebounced = $scope.throttle(onWindowScroll, 16);
-//                stopScrollingDebounced = $scope.debounce(stopScrolling, 100);
+                onWindowScrollDebounced = $scope.throttle(onWindowScroll, 16);
+                stopScrollingDebounced = $scope.debounce(stopScrolling, 100);
 
                 // Key Bindings
                 if(config.disableHotkeys == false) {
                     els.window.bind('keydown', keyDown);
                     // window scroll, resize bindings
-                    els.window.bind('resize scroll', onWindowScrollDebounced);
+                    els.window.bind('scroll', onWindowScrollDebounced);
+                    els.window.bind('resize', onWindowScrollDebounced);
                     window.addWheelListener(window, onWindowScrollDebounced);
                     // content scroll bindings
                     els.content = angular.element(el[0].children[0].children[0].children[4]);
@@ -550,7 +551,7 @@
                     }
                     // Scroll Back to the top
                     
-//                    els.content.scrollTop(0);
+//                    els.content[0].scrollTop = 0;
 
                     // Reset Scrolling and Seeking states
                     seeking = true;
@@ -589,22 +590,26 @@
                         return $q.when(null);
                     }
                     // Window
+                    var w = $window,
+                    d = $document[0],
+                    e = d.documentElement,
+                    g = d.getElementsByTagName('body')[0];
+                    
                     dims.window = {
-                        width: $document[0].innerWidth,
-                        height: $document[0].innerHeight
+                        width: w.innerWidth || e.clientWidth || g.clientWidth,
+                        height: w.innerHeight|| e.clientHeight|| g.clientHeight
                     };
 
                     // Scrollbox
                     dims.scroll = {
-                        width: els.scroll.innerWidth,
-                        height: els.scroll.offsetHeight,
+                        width: els.scroll[0].clientWidth,
+                        height: els.scroll[0].clientHeight,
                         offset: els.scroll[0].getBoundingClientRect(),
                         scroll: {
-                            top: els.scroll.scrollTop,
-                            left: els.scroll.scrollLeft
+                            top: els.scroll[0].scrollTop,
+                            left: els.scroll[0].scrollLeft
                         }
                     };
-
                    //  Round Offsets
                     angular.forEach(dims.scroll.offset, function(o, i) {
                         dims.scroll.offset[i] = Math.ceil(o);
@@ -635,11 +640,11 @@
                     });
 
                     // Get Target Bottom and right
-                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.height;
-                    dims.target.offset.toRight = dims.target.offset.left + dims.target.width;
-                    dims.target.offset.fromBottom = dims.window.height - dims.target.offset.top - dims.target.height;
-                    dims.target.offset.fromRight = dims.window.width - dims.target.offset.left - dims.target.width;
-
+                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.offset.height;
+                    dims.target.offset.toRight = dims.target.offset.left + dims.target.offset.width;
+                    dims.target.offset.fromBottom = dims.window.height - dims.target.offset.top - dims.target.offset.height;
+                    dims.target.offset.fromRight = dims.window.width - dims.target.offset.left - dims.target.offset.width;
+                    
                     // Get Target Margin Points
                     dims.target.margins = {
                         offset: {
@@ -667,17 +672,27 @@
                     if (!newScrollTop) {
                         d.resolve();
                     } else {
-                        els.scroll.animate({
-                                scrollTop: newScrollTop
-                            }, scrolling ? 0 : config.animationDuration,
-                            function() {
-                                d.resolve();
-                            });
+                      scrollTo(els.scroll[0], newScrollTop, scrolling ? 0 : config.animationDuration, d)
+                        
                     }
-
                     return d.promise;
                 }
 
+                function scrollTo(element, to, duration, d) {
+                  if (duration <= 0) {
+                    d.resolve();
+                    return;
+                  }
+                  var difference = to - element.scrollTop;
+                  var perTick = difference / duration * 10;
+
+                  setTimeout(function() {
+                      element.scrollTop = element.scrollTop + perTick;
+                      if (element.scrollTop === to) return;
+                      scrollTo(element, to, duration - 10, d);
+                  }, 10);
+                }
+                
                 function findScrollTop() {
                     // Is element to large to fit?
                     if (dims.target.margins.height > dims.scroll.height) {
@@ -697,7 +712,6 @@
                     if (dims.target.margins.offset.top < dims.scroll.offset.top) {
                         return dims.scroll.scroll.top - (dims.scroll.offset.top - dims.target.margins.offset.top);
                     }
-
                     // Is Element too far Below Us?
                     if (dims.target.margins.offset.toBottom > dims.scroll.offset.toBottom) {
                         return dims.scroll.scroll.top + (dims.target.margins.offset.toBottom - dims.scroll.offset.toBottom);
@@ -969,8 +983,7 @@
                 }
 
                 function moveMasks() {
-                  console.log(els.target);
-                    if (!els.target) {console.log('1st !', els.masks_top)
+                    if (!els.target) {
                         els.masks_top.css({
                             height: config.mask.visibleOnNoTarget ? '100%' : '0px'
                         });
@@ -991,7 +1004,6 @@
                     }
 
                     var margin = config.highlightMargin ? config.highlightMargin : 0;
-console.log(dims.target.offset.top);
                     els.masks_top.css({
                         height: dims.target.offset.top - margin + 'px',
                         top: dims.target.offset.top < 0 ? dims.target.offset.top + 'px' : 0
@@ -1002,12 +1014,12 @@ console.log(dims.target.offset.top);
                     });
                     els.masks_left.css({
                         top: dims.target.offset.top - margin + 'px',
-                        height: dims.target.height + 2*margin + 'px',
+                        height: dims.target.offset.height + 2*margin + 'px',
                         width: dims.target.offset.left - margin + 'px'
                     });
                     els.masks_right.css({
                         top: dims.target.offset.top - margin + 'px',
-                        height: dims.target.height + 2*margin + 'px',
+                        height: dims.target.offset.height + 2*margin + 'px',
                         width: dims.target.offset.fromRight - margin + 'px'
                     });
 
