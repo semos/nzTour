@@ -559,8 +559,11 @@
                     return findTarget(step)
                         .then(getDimensions)
                         .then(scrollToTarget)
+                        .then(function(){console.log('toto, before getDimensions 2');})
                         .then(getDimensions)
+                        .then(function(){console.log('toto, before movetotarget');})
                         .then(moveToTarget)
+                        .then(function(){console.log('toto, after movetotarget');})
                         .then(function() {
                             seeking = false;
                         });
@@ -604,7 +607,7 @@
                     dims.scroll = {
                         width: els.scroll[0].clientWidth,
                         height: els.scroll[0].clientHeight,
-                        offset: els.scroll[0].getBoundingClientRect(),
+                        offset: {top:els.scroll[0].offsetTop,left:els.scroll[0].offsetLeft},
                         scroll: {
                             top: els.scroll[0].scrollTop,
                             left: els.scroll[0].scrollLeft
@@ -617,18 +620,19 @@
 
                     dims.scroll.height = (dims.scroll.height + dims.scroll.offset.top > dims.window.height) ? dims.window.height : dims.scroll.height;
                     dims.scroll.width = (dims.scroll.width + dims.scroll.offset.left > dims.window.width) ? dims.window.width : dims.scroll.width;
+                    console.log('hw', els.scroll[0], dims.scroll.height, dims.scroll.width)
                     dims.scroll.offset.toBottom = dims.scroll.height + dims.scroll.offset.top;
                     dims.scroll.offset.toRight = dims.scroll.width + dims.scroll.offset.left;
                     dims.scroll.offset.fromBottom = dims.window.height - dims.scroll.offset.top - dims.scroll.height;
                     dims.scroll.offset.fromRight = dims.window.width - dims.scroll.offset.left - dims.scroll.width;
-
+                    console.log('hw toBottom',dims.scroll.height , dims.scroll.offset.top, dims.scroll.offset.toBottom)
                     // Target
                     dims.target = {
-                        width: els.target.offsetWidth,
-                        height: els.target.offsetHeight,
-                        offset: els.target[0].getBoundingClientRect()
+                        width: els.target[0].offsetWidth,
+                        height: els.target[0].offsetHeight,
+                        offset: els.target[0].getBoundingClientRect()// {top:els.target[0].offsetTop,left:els.target[0].offsetLeft}
                     };
-
+//                    dims.target.offset.top = Math.abs(dims.target.offset.top);
                     // For an html/body scrollbox
                     if (config.scrollBox == 'body' || config.scrollBox == 'html') {
                         dims.target.offset.top -= dims.scroll.scroll.top;
@@ -638,12 +642,12 @@
                     angular.forEach(dims.target.offset, function(o, i) {
                         dims.target.offset[i] = Math.ceil(o);
                     });
-
+//                    console.info(, dims.target, dims.target.offset.top, dims.target.height);
                     // Get Target Bottom and right
-                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.offset.height;
-                    dims.target.offset.toRight = dims.target.offset.left + dims.target.offset.width;
-                    dims.target.offset.fromBottom = dims.window.height - dims.target.offset.top - dims.target.offset.height;
-                    dims.target.offset.fromRight = dims.window.width - dims.target.offset.left - dims.target.offset.width;
+                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.height; //dist top > bas de l'élément
+                    dims.target.offset.toRight = dims.target.offset.left + dims.target.width;
+                    dims.target.offset.fromBottom = dims.window.height - dims.target.offset.top - dims.target.height;
+                    dims.target.offset.fromRight = dims.window.width - dims.target.offset.left - dims.target.width;
                     
                     // Get Target Margin Points
                     dims.target.margins = {
@@ -685,17 +689,16 @@
                   }
                   var difference = to - element.scrollTop;
                   var perTick = difference / duration * 10;
-
                   setTimeout(function() {
                       element.scrollTop = element.scrollTop + perTick;
-                      if (element.scrollTop === to) return;
+                      if (element.scrollTop === to) {d.resolve(); return;}
                       scrollTo(element, to, duration - 10, d);
                   }, 10);
                 }
                 
-                function findScrollTop() {
+                function findScrollTop() {console.log('findScrollTop');
                     // Is element to large to fit?
-                    if (dims.target.margins.height > dims.scroll.height) {
+                    if (dims.target.margins.height > dims.scroll.height) {console.log('trop gros');
                         // Is the element too far above us?
                         if (dims.target.offset.toBottom - maxHeight < dims.scroll.offset.top) {
                             return dims.scroll.scroll.top - (dims.scroll.offset.top - (dims.target.offset.toBottom - maxHeight));
@@ -707,13 +710,17 @@
                         // Must be visible on both ends?
                         return false;
                     }
-
+                    console.log('target', dims.target.margins.offset.top );
+                    console.log('scroll', dims.scroll.offset.top);
                     // Is Element too far Above Us?
                     if (dims.target.margins.offset.top < dims.scroll.offset.top) {
+                      console.log('en haut');
                         return dims.scroll.scroll.top - (dims.scroll.offset.top - dims.target.margins.offset.top);
                     }
                     // Is Element too far Below Us?
                     if (dims.target.margins.offset.toBottom > dims.scroll.offset.toBottom) {
+                      console.log('en bas');
+                      
                         return dims.scroll.scroll.top + (dims.target.margins.offset.toBottom - dims.scroll.offset.toBottom);
                     }
 
@@ -982,7 +989,7 @@
                     }
                 }
 
-                function moveMasks() {
+                function moveMasks() {console.log('movemasks');
                     if (!els.target) {
                         els.masks_top.css({
                             height: config.mask.visibleOnNoTarget ? '100%' : '0px'
