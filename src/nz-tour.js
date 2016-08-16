@@ -261,13 +261,13 @@
     module.directive('nzTour', function($q, $compile, $document, $timeout, $window) {
         return {
             template: [
-                '<div id="nzTour-box-wrap">',
+                '<div id="nzTour-box-wrap" style="transition:all 400ms ease;">',
                 '   <div id="nzTour-box">',
                 '        <div id="nzTour-tip" class="top center"></div>',
                 '        <div id="nzTour-step">{{view.step + 1}}</div>',
                 '        <div id="nzTour-length">{{view.length}}</div>',
                 '        <div id="nzTour-close" ng-click="stop()">&#10005</div>',
-                '        <div id="nzTour-content">',
+                '        <div id="nzTour-content" >',
                 '           <div id="nzTour-inner-content"></div>',
                 '        </div>',
                 '        <div id="nzTour-actions">',
@@ -277,10 +277,10 @@
                 '    </div>',
                 '</div>',
                 '<div class="nzTour-masks" ng-show="current.tour.config.mask.visible" ng-click="tryStop()">',
-                '    <div class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
                 '    <div class="mask center"></div>',
                 '</div>'
             ].join(' '),
@@ -447,6 +447,12 @@
                 }
 
                 function toggleMaskTransitions(state) {
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
                   var group = [
                     els.masks_top,
                     els.masks_right,
@@ -550,7 +556,6 @@
                       els.innerContent.append(compiledHtml);
                     }
                     // Scroll Back to the top
-                    
 //                    els.content[0].scrollTop = 0;
 
                     // Reset Scrolling and Seeking states
@@ -753,7 +758,7 @@
                     return $q.when(null);
 
                     // Placement Priorities
-                    function bottom() {
+                    function bottom() {console.log('placing bottom,');
                         // Can Below?
                         if (dims.target.margins.offset.fromBottom > maxHeight) {
                             // Can Centered?
@@ -870,7 +875,7 @@
                             tipY = 'top';
                             translateY = '0';
                         }
-
+                        
                         if (h == 'right') {
                             left = dims.target.offset.toRight;
                             translateX = '-100%';
@@ -881,13 +886,14 @@
                             left = dims.target.offset.left;
                             translateX = '0';
                         }
-
+                        
+                        els.wrap = angular.element($document[0].getElementById('nzTour-box-wrap'));
                         els.wrap.css({
                             left: left + 'px',
                             top: top + 'px',
                             transform: 'translate(' + translateX + ',' + translateY + ')'
                         });
-
+                        els.tip = angular.element($document[0].querySelectorAll('#nzTour-tip'));
                         els.tip.attr('class', 'vertical ' + tipY + ' ' + h);
                     }
 
@@ -979,6 +985,13 @@
                 }
 
                 function moveMasks() {
+                  
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
                     if (!els.target) {
                         els.masks_top.css({
                             height: config.mask.visibleOnNoTarget ? '100%' : '0px'
