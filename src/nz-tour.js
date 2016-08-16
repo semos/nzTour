@@ -1,7 +1,7 @@
 (function() {
     var module = angular.module('nzTour', []);
 
-    module.factory('nzTour', function($q, $rootScope, $compile, $timeout) {
+    module.factory('nzTour', function($q, $rootScope, $compile, $timeout, $document) {
 
         var service = $rootScope.$new();
 
@@ -29,7 +29,7 @@
                 showNext: true
             },
             current: false,
-            body: angular.element('body'),
+            body: $document[0].body,
             box: false,
 
             // Methods
@@ -129,7 +129,6 @@
 
         // Internals
         function startTour(tour) {
-
             tour.config = extendDeep({}, service.config, tour.config);
 
             // Check for valid priorities
@@ -185,7 +184,7 @@
 
         function doBefore(direction) {
             if (service.current.tour.steps[service.current.step].before) {
-                return service.current.tour.steps[service.current.step].before(direction);
+              return service.current.tour.steps[service.current.step].before(direction);
             }
             return $q.when(null);
         }
@@ -259,16 +258,16 @@
         }
     });
 
-    module.directive('nzTour', function($q, $compile) {
+    module.directive('nzTour', function($q, $compile, $document, $timeout, $window) {
         return {
             template: [
-                '<div id="nzTour-box-wrap">',
+                '<div id="nzTour-box-wrap" style="transition:all 400ms ease;">',
                 '   <div id="nzTour-box">',
                 '        <div id="nzTour-tip" class="top center"></div>',
                 '        <div id="nzTour-step">{{view.step + 1}}</div>',
                 '        <div id="nzTour-length">{{view.length}}</div>',
                 '        <div id="nzTour-close" ng-click="stop()">&#10005</div>',
-                '        <div id="nzTour-content">',
+                '        <div id="nzTour-content" >',
                 '           <div id="nzTour-inner-content"></div>',
                 '        </div>',
                 '        <div id="nzTour-actions">',
@@ -278,54 +277,80 @@
                 '    </div>',
                 '</div>',
                 '<div class="nzTour-masks" ng-show="current.tour.config.mask.visible" ng-click="tryStop()">',
-                '    <div class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
                 '    <div class="mask center"></div>',
                 '</div>'
             ].join(' '),
             link: function($scope, el) {
-
+              
+              var config = $scope.current.tour.config,
+                target = false,
+                seeking = false,
+                margin = 15,
+                maxHeight = 120,
+                maxWidth = 250,
+                scrolling = false,
+                maskTransitions = true,
+                currentStep = null;
+              
+              var els = {
+                  window: angular.element(window),
+                  wrap: angular.element($document[0].getElementById('nzTour-box-wrap')),
+                  box: angular.element($document[0].querySelectorAll('#nzTour-box')),
+                  tip: angular.element($document[0].querySelectorAll('#nzTour-tip')),
+                  step: angular.element($document[0].querySelectorAll('#nzTour-step')),
+                  close: angular.element($document[0].querySelectorAll('#nzTour-close')),
+                  content: angular.element($document[0].getElementById('nzTour-content')),
+                  innerContent: angular.element($document[0].querySelectorAll('#nzTour-inner-content')),
+                  actions: angular.element($document[0].querySelectorAll('#nzTour-actions')),
+                  previous: angular.element($document[0].querySelectorAll('#nzTour-previous')),
+                  next: angular.element($document[0].querySelectorAll('#nzTour-next')),
+                  masks_wrap: angular.element($document[0].querySelectorAll('.nzTour-masks')),
+                  masks_top: angular.element($document[0].querySelectorAll('.nzTour-masks .top')),
+                  masks_right: angular.element($document[0].querySelectorAll('.nzTour-masks .right')),
+                  masks_bottom: angular.element($document[0].querySelectorAll('.nzTour-masks .bottom')),
+                  masks_left: angular.element($document[0].querySelectorAll('.nzTour-masks .left')),
+                  masks_center: angular.element($document[0].querySelectorAll('.nzTour-masks .center')),
+                  scroll: angular.element($document[0].querySelectorAll(config.scrollBox)),
+                  target: false
+              }, dims = {
+                  window: {},
+                  scroll: {},
+                  target: {}
+              }, stepUpdater, onWindowScrollDebounced, stopScrollingDebounced;
+              
+              stepUpdater = $scope.$on('step', updateStep);
+              
+              $timeout(function(){
+              $document.find('body').css('overflow','hidden');
                 // $scope is the actual nzTour service :)
 
-                var config = $scope.current.tour.config,
-                    target = false,
-                    seeking = false,
-                    margin = 15,
-                    maxHeight = 120,
-                    maxWidth = 250,
-                    scrolling = false,
-                    maskTransitions = true,
-                    currentStep = null;
-
-                var els = {
+                els = {
                     window: angular.element(window),
-                    wrap: el.find('#nzTour-box-wrap'),
-                    box: el.find('#nzTour-box'),
-                    tip: el.find('#nzTour-tip'),
-                    step: el.find('#nzTour-step'),
-                    close: el.find('#nzTour-close'),
-                    content: el.find('#nzTour-content'),
-                    innerContent: el.find('#nzTour-inner-content'),
-                    actions: el.find('#nzTour-actions'),
-                    previous: el.find('#nzTour-previous'),
-                    next: el.find('#nzTour-next'),
-                    masks_wrap: el.find('.nzTour-masks'),
-                    masks_top: el.find('.nzTour-masks .top'),
-                    masks_right: el.find('.nzTour-masks .right'),
-                    masks_bottom: el.find('.nzTour-masks .bottom'),
-                    masks_left: el.find('.nzTour-masks .left'),
-                    masks_center: el.find('.nzTour-masks .center'),
-                    scroll: angular.element(config.scrollBox),
+                    wrap: angular.element($document[0].getElementById('nzTour-box-wrap')),
+                    box: angular.element($document[0].querySelectorAll('#nzTour-box')),
+                    tip: angular.element($document[0].querySelectorAll('#nzTour-tip')),
+                    step: angular.element($document[0].querySelectorAll('#nzTour-step')),
+                    close: angular.element($document[0].querySelectorAll('#nzTour-close')),
+                    content: angular.element($document[0].getElementById('nzTour-content')),
+                    innerContent: angular.element($document[0].querySelectorAll('#nzTour-inner-content')),
+                    actions: angular.element($document[0].querySelectorAll('#nzTour-actions')),
+                    previous: angular.element($document[0].querySelectorAll('#nzTour-previous')),
+                    next: angular.element($document[0].querySelectorAll('#nzTour-next')),
+                    masks_wrap: angular.element($document[0].querySelectorAll('.nzTour-masks')),
+                    masks_top: angular.element($document[0].querySelectorAll('.nzTour-masks .top')),
+                    masks_right: angular.element($document[0].querySelectorAll('.nzTour-masks .right')),
+                    masks_bottom: angular.element($document[0].querySelectorAll('.nzTour-masks .bottom')),
+                    masks_left: angular.element($document[0].querySelectorAll('.nzTour-masks .left')),
+                    masks_center: angular.element($document[0].querySelectorAll('.nzTour-masks .center')),
+                    scroll: angular.element($document[0].querySelectorAll(config.scrollBox)),
                     target: false
                 };
 
-                var dims = {
-                    window: {},
-                    scroll: {},
-                    target: {}
-                };
+                
 
                 // Turn on Transitions
                 toggleMaskTransitions(true);
@@ -341,18 +366,20 @@
                 }
 
                 // Step Update Listener
-                var stepUpdater = $scope.$on('step', updateStep);
+                
                 // Thottle for 60fps
-                var onWindowScrollDebounced = $scope.throttle(onWindowScroll, 16);
-                var stopScrollingDebounced = $scope.debounce(stopScrolling, 100);
+                onWindowScrollDebounced = $scope.throttle(onWindowScroll, 16);
+                stopScrollingDebounced = $scope.debounce(stopScrolling, 100);
 
                 // Key Bindings
                 if(config.disableHotkeys == false) {
                     els.window.bind('keydown', keyDown);
                     // window scroll, resize bindings
-                    els.window.bind('resize scroll', onWindowScrollDebounced);
+                    els.window.bind('scroll', onWindowScrollDebounced);
+                    els.window.bind('resize', onWindowScrollDebounced);
                     window.addWheelListener(window, onWindowScrollDebounced);
                     // content scroll bindings
+                    els.content = angular.element(el[0].children[0].children[0].children[4]);
                     els.content.bind('scroll', onBoxScroll);
                     window.addWheelListener(els.content[0], onBoxScroll);
                     // mask scroll bindings
@@ -360,7 +387,7 @@
                         window.addWheelListener(els.masks_wrap[0], stopMaskScroll);
                     }
                 }
-
+              });
                 // Event Cleanup
                 $scope.cleanup = function cleanup() {
                     stepUpdater();
@@ -420,22 +447,42 @@
                 }
 
                 function toggleMaskTransitions(state) {
-                    var group = els.masks_top.add(els.masks_right).add(els.masks_bottom).add(els.masks_left);
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
+                  var group = [
+                    els.masks_top,
+                    els.masks_right,
+                    els.masks_bottom,
+                    els.masks_left
+                  ];
                     if (state) {
                         maskTransitions = true;
-                        group.css('transition', 'all ' + config.animationDuration + 'ms ease');
+                        for (var i = 0; i < group.length; i++) {
+                          group[i].css('transition', 'all ' + config.animationDuration + 'ms ease');
+                        }
                     } else {
                         maskTransitions = false;
-                        group.css('transition', 'all 0');
+                        for (var i = 0; i < group.length; i++)
+                          group[i].css('transition', 'all 0');
                     }
                 }
 
                 function toggleBoxTransitions(state) {
-                    var group = els.wrap.add(els.box).add(els.tip);
+                  var group = [
+                    els.wrap,
+                    els.box,
+                    els.tip
+                  ]; 
                     if (state) {
-                        group.css('transition', 'all ' + config.animationDuration + 'ms ease');
+                      for (var i = 0; i < group.length; i++)
+                        group[i].css('transition', 'all ' + config.animationDuration + 'ms ease');
                     } else {
-                        group.css('transition', 'all 0');
+                      for (var i = 0; i < group.length; i++)
+                        group[i].css('transition', 'all 0');
                     }
                 }
 
@@ -502,10 +549,14 @@
                     var stepHtml = '<div>' + steps[step].content + '</div>';
                     // Compile the step definition html so ng-click works as expected.
                     var compiledHtml = $compile(stepHtml)($scope);
-                    els.innerContent.html(compiledHtml);
-
+                    els.innerContent = angular.element($document[0].getElementById('nzTour-inner-content'));
+                    if (els.innerContent[0].children.length) {
+                      els.innerContent[0].replaceChild(compiledHtml[0], els.innerContent[0].children[0]);
+                    } else {
+                      els.innerContent.append(compiledHtml);
+                    }
                     // Scroll Back to the top
-                    els.content.scrollTop(0);
+//                    els.content[0].scrollTop = 0;
 
                     // Reset Scrolling and Seeking states
                     seeking = true;
@@ -527,7 +578,7 @@
                     if (els.target) {
                         d.resolve(target);
                     } else {
-                        var foundTarget = angular.element($scope.current.tour.steps[step].target);
+                        var foundTarget = $document[0].querySelectorAll($scope.current.tour.steps[step].target);
                         if (!foundTarget.length) {
                             d.resolve(false);
                         } else {
@@ -543,25 +594,28 @@
                     if (!els.target) {
                         return $q.when(null);
                     }
-
                     // Window
+                    var w = $window,
+                    d = $document[0],
+                    e = d.documentElement,
+                    g = d.getElementsByTagName('body')[0];
+                    
                     dims.window = {
-                        width: els.window.width(),
-                        height: els.window.height()
+                        width: w.innerWidth || e.clientWidth || g.clientWidth,
+                        height: w.innerHeight|| e.clientHeight|| g.clientHeight
                     };
 
                     // Scrollbox
                     dims.scroll = {
-                        width: els.scroll.outerWidth(),
-                        height: els.scroll.outerHeight(),
-                        offset: els.scroll.offset(),
+                        width: els.scroll[0].clientWidth,
+                        height: els.scroll[0].clientHeight,
+                        offset: {top:els.scroll[0].offsetTop,left:els.scroll[0].offsetLeft},
                         scroll: {
-                            top: els.scroll.scrollTop(),
-                            left: els.scroll.scrollLeft()
+                            top: els.scroll[0].scrollTop,
+                            left: els.scroll[0].scrollLeft
                         }
                     };
-
-                    // Round Offsets
+                   //  Round Offsets
                     angular.forEach(dims.scroll.offset, function(o, i) {
                         dims.scroll.offset[i] = Math.ceil(o);
                     });
@@ -572,14 +626,13 @@
                     dims.scroll.offset.toRight = dims.scroll.width + dims.scroll.offset.left;
                     dims.scroll.offset.fromBottom = dims.window.height - dims.scroll.offset.top - dims.scroll.height;
                     dims.scroll.offset.fromRight = dims.window.width - dims.scroll.offset.left - dims.scroll.width;
-
                     // Target
                     dims.target = {
-                        width: els.target.outerWidth(),
-                        height: els.target.outerHeight(),
-                        offset: els.target.offset()
+                        width: els.target[0].offsetWidth,
+                        height: els.target[0].offsetHeight,
+                        offset: els.target[0].getBoundingClientRect()// {top:els.target[0].offsetTop,left:els.target[0].offsetLeft}
                     };
-
+//                    dims.target.offset.top = Math.abs(dims.target.offset.top);
                     // For an html/body scrollbox
                     if (config.scrollBox == 'body' || config.scrollBox == 'html') {
                         dims.target.offset.top -= dims.scroll.scroll.top;
@@ -589,13 +642,12 @@
                     angular.forEach(dims.target.offset, function(o, i) {
                         dims.target.offset[i] = Math.ceil(o);
                     });
-
                     // Get Target Bottom and right
-                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.height;
+                    dims.target.offset.toBottom = dims.target.offset.top + dims.target.height; //dist top > bas de l'élément
                     dims.target.offset.toRight = dims.target.offset.left + dims.target.width;
                     dims.target.offset.fromBottom = dims.window.height - dims.target.offset.top - dims.target.height;
                     dims.target.offset.fromRight = dims.window.width - dims.target.offset.left - dims.target.width;
-
+                    
                     // Get Target Margin Points
                     dims.target.margins = {
                         offset: {
@@ -623,17 +675,26 @@
                     if (!newScrollTop) {
                         d.resolve();
                     } else {
-                        els.scroll.animate({
-                                scrollTop: newScrollTop
-                            }, scrolling ? 0 : config.animationDuration,
-                            function() {
-                                d.resolve();
-                            });
+                      scrollTo(els.scroll[0], newScrollTop, scrolling ? 0 : config.animationDuration, d)
+                        
                     }
-
                     return d.promise;
                 }
 
+                function scrollTo(element, to, duration, d) {
+                  if (duration <= 0) {
+                    d.resolve();
+                    return;
+                  }
+                  var difference = to - element.scrollTop;
+                  var perTick = difference / duration * 10;
+                  setTimeout(function() {
+                      element.scrollTop = element.scrollTop + perTick;
+                      if (element.scrollTop === to) {d.resolve(); return;}
+                      scrollTo(element, to, duration - 10, d);
+                  }, 10);
+                }
+                
                 function findScrollTop() {
                     // Is element to large to fit?
                     if (dims.target.margins.height > dims.scroll.height) {
@@ -648,12 +709,10 @@
                         // Must be visible on both ends?
                         return false;
                     }
-
                     // Is Element too far Above Us?
                     if (dims.target.margins.offset.top < dims.scroll.offset.top) {
                         return dims.scroll.scroll.top - (dims.scroll.offset.top - dims.target.margins.offset.top);
                     }
-
                     // Is Element too far Below Us?
                     if (dims.target.margins.offset.toBottom > dims.scroll.offset.toBottom) {
                         return dims.scroll.scroll.top + (dims.target.margins.offset.toBottom - dims.scroll.offset.toBottom);
@@ -699,7 +758,7 @@
                     return $q.when(null);
 
                     // Placement Priorities
-                    function bottom() {
+                    function bottom() {console.log('placing bottom,');
                         // Can Below?
                         if (dims.target.margins.offset.fromBottom > maxHeight) {
                             // Can Centered?
@@ -816,7 +875,7 @@
                             tipY = 'top';
                             translateY = '0';
                         }
-
+                        
                         if (h == 'right') {
                             left = dims.target.offset.toRight;
                             translateX = '-100%';
@@ -827,13 +886,14 @@
                             left = dims.target.offset.left;
                             translateX = '0';
                         }
-
+                        
+                        els.wrap = angular.element($document[0].getElementById('nzTour-box-wrap'));
                         els.wrap.css({
                             left: left + 'px',
                             top: top + 'px',
                             transform: 'translate(' + translateX + ',' + translateY + ')'
                         });
-
+                        els.tip = angular.element($document[0].querySelectorAll('#nzTour-tip'));
                         els.tip.attr('class', 'vertical ' + tipY + ' ' + h);
                     }
 
@@ -913,18 +973,25 @@
                     }
 
                     function placeCentered() {
-                        els.wrap.css({
+                        angular.element($document[0].getElementById('nzTour-box-wrap')).css({
                             left: '50%',
                             top: '50%',
                             transform: 'translate(-50%, -50%)',
                             margin: '0'
                         });
-                        els.tip.attr('class', 'hidden');
+                        angular.element($document[0].getElementById('nzTour-tip')).attr('class', 'hidden');
 
                     }
                 }
 
                 function moveMasks() {
+                  
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
                     if (!els.target) {
                         els.masks_top.css({
                             height: config.mask.visibleOnNoTarget ? '100%' : '0px'
@@ -946,7 +1013,6 @@
                     }
 
                     var margin = config.highlightMargin ? config.highlightMargin : 0;
-
                     els.masks_top.css({
                         height: dims.target.offset.top - margin + 'px',
                         top: dims.target.offset.top < 0 ? dims.target.offset.top + 'px' : 0
@@ -957,12 +1023,12 @@
                     });
                     els.masks_left.css({
                         top: dims.target.offset.top - margin + 'px',
-                        height: dims.target.height + 2*margin + 'px',
+                        height: dims.target.offset.height + 2*margin + 'px',
                         width: dims.target.offset.left - margin + 'px'
                     });
                     els.masks_right.css({
                         top: dims.target.offset.top - margin + 'px',
-                        height: dims.target.height + 2*margin + 'px',
+                        height: dims.target.offset.height + 2*margin + 'px',
                         width: dims.target.offset.fromRight - margin + 'px'
                     });
 

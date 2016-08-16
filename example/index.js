@@ -1,7 +1,7 @@
 (function() {
     var module = angular.module('demo', ['nzTour']);
 
-    module.controller('mainController', function($scope, $q, nzTour) {
+    module.controller('mainController', function($scope, $q, nzTour, $document) {
 
         var tour = window.tour = {
             config: {
@@ -30,15 +30,16 @@
                 content: "Luke, come to the dark side...",
                 before: function() {
                     var d = $q.defer();
-                    angular.element('#vader').css('opacity', '1');
-                    angular.element('#nzTour-box').addClass('dark-box');
+                    console.log();
+                    angular.element($document[0].querySelectorAll('#vader')).css('opacity', '1');
+                    angular.element($document[0].querySelectorAll('#nzTour-box')).addClass('dark-box');
                     d.resolve();
                     return d.promise;
                 },
                 after: function() {
                     var d = $q.defer();
-                    angular.element('#vader').css('opacity', '0');
-                    angular.element('#nzTour-box').removeClass('dark-box');
+                    angular.element($document[0].querySelectorAll('#vader')).css('opacity', '0');
+                    angular.element($document[0].querySelectorAll('#nzTour-box')).removeClass('dark-box');
                     d.resolve();
                     return d.promise;
                 }
