@@ -261,13 +261,13 @@
     module.directive('nzTour', ["$q", "$compile", "$document", "$timeout", "$window", function($q, $compile, $document, $timeout, $window) {
         return {
             template: [
-                '<div id="nzTour-box-wrap">',
+                '<div id="nzTour-box-wrap" style="transition:all 400ms ease;">',
                 '   <div id="nzTour-box">',
                 '        <div id="nzTour-tip" class="top center"></div>',
                 '        <div id="nzTour-step">{{view.step + 1}}</div>',
                 '        <div id="nzTour-length">{{view.length}}</div>',
                 '        <div id="nzTour-close" ng-click="stop()">&#10005</div>',
-                '        <div id="nzTour-content">',
+                '        <div id="nzTour-content" >',
                 '           <div id="nzTour-inner-content"></div>',
                 '        </div>',
                 '        <div id="nzTour-actions">',
@@ -277,10 +277,10 @@
                 '    </div>',
                 '</div>',
                 '<div class="nzTour-masks" ng-show="current.tour.config.mask.visible" ng-click="tryStop()">',
-                '    <div class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
-                '    <div class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask top" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask right" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask bottom" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
+                '    <div style="transition:all 400ms ease;" class="mask left" ng-style="{\'background-color\': current.tour.config.mask.color}"></div>',
                 '    <div class="mask center"></div>',
                 '</div>'
             ].join(' '),
@@ -447,6 +447,12 @@
                 }
 
                 function toggleMaskTransitions(state) {
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
                   var group = [
                     els.masks_top,
                     els.masks_right,
@@ -550,7 +556,6 @@
                       els.innerContent.append(compiledHtml);
                     }
                     // Scroll Back to the top
-                    
 //                    els.content[0].scrollTop = 0;
 
                     // Reset Scrolling and Seeking states
@@ -559,11 +564,8 @@
                     return findTarget(step)
                         .then(getDimensions)
                         .then(scrollToTarget)
-                        .then(function(){console.log('toto, before getDimensions 2');})
                         .then(getDimensions)
-                        .then(function(){console.log('toto, before movetotarget');})
                         .then(moveToTarget)
-                        .then(function(){console.log('toto, after movetotarget');})
                         .then(function() {
                             seeking = false;
                         });
@@ -620,12 +622,10 @@
 
                     dims.scroll.height = (dims.scroll.height + dims.scroll.offset.top > dims.window.height) ? dims.window.height : dims.scroll.height;
                     dims.scroll.width = (dims.scroll.width + dims.scroll.offset.left > dims.window.width) ? dims.window.width : dims.scroll.width;
-                    console.log('hw', els.scroll[0], dims.scroll.height, dims.scroll.width)
                     dims.scroll.offset.toBottom = dims.scroll.height + dims.scroll.offset.top;
                     dims.scroll.offset.toRight = dims.scroll.width + dims.scroll.offset.left;
                     dims.scroll.offset.fromBottom = dims.window.height - dims.scroll.offset.top - dims.scroll.height;
                     dims.scroll.offset.fromRight = dims.window.width - dims.scroll.offset.left - dims.scroll.width;
-                    console.log('hw toBottom',dims.scroll.height , dims.scroll.offset.top, dims.scroll.offset.toBottom)
                     // Target
                     dims.target = {
                         width: els.target[0].offsetWidth,
@@ -642,7 +642,6 @@
                     angular.forEach(dims.target.offset, function(o, i) {
                         dims.target.offset[i] = Math.ceil(o);
                     });
-//                    console.info(, dims.target, dims.target.offset.top, dims.target.height);
                     // Get Target Bottom and right
                     dims.target.offset.toBottom = dims.target.offset.top + dims.target.height; //dist top > bas de l'élément
                     dims.target.offset.toRight = dims.target.offset.left + dims.target.width;
@@ -696,9 +695,9 @@
                   }, 10);
                 }
                 
-                function findScrollTop() {console.log('findScrollTop');
+                function findScrollTop() {
                     // Is element to large to fit?
-                    if (dims.target.margins.height > dims.scroll.height) {console.log('trop gros');
+                    if (dims.target.margins.height > dims.scroll.height) {
                         // Is the element too far above us?
                         if (dims.target.offset.toBottom - maxHeight < dims.scroll.offset.top) {
                             return dims.scroll.scroll.top - (dims.scroll.offset.top - (dims.target.offset.toBottom - maxHeight));
@@ -710,17 +709,12 @@
                         // Must be visible on both ends?
                         return false;
                     }
-                    console.log('target', dims.target.margins.offset.top );
-                    console.log('scroll', dims.scroll.offset.top);
                     // Is Element too far Above Us?
                     if (dims.target.margins.offset.top < dims.scroll.offset.top) {
-                      console.log('en haut');
                         return dims.scroll.scroll.top - (dims.scroll.offset.top - dims.target.margins.offset.top);
                     }
                     // Is Element too far Below Us?
                     if (dims.target.margins.offset.toBottom > dims.scroll.offset.toBottom) {
-                      console.log('en bas');
-                      
                         return dims.scroll.scroll.top + (dims.target.margins.offset.toBottom - dims.scroll.offset.toBottom);
                     }
 
@@ -764,7 +758,7 @@
                     return $q.when(null);
 
                     // Placement Priorities
-                    function bottom() {
+                    function bottom() {console.log('placing bottom,');
                         // Can Below?
                         if (dims.target.margins.offset.fromBottom > maxHeight) {
                             // Can Centered?
@@ -881,7 +875,7 @@
                             tipY = 'top';
                             translateY = '0';
                         }
-
+                        
                         if (h == 'right') {
                             left = dims.target.offset.toRight;
                             translateX = '-100%';
@@ -892,13 +886,14 @@
                             left = dims.target.offset.left;
                             translateX = '0';
                         }
-
+                        
+                        els.wrap = angular.element($document[0].getElementById('nzTour-box-wrap'));
                         els.wrap.css({
                             left: left + 'px',
                             top: top + 'px',
                             transform: 'translate(' + translateX + ',' + translateY + ')'
                         });
-
+                        els.tip = angular.element($document[0].querySelectorAll('#nzTour-tip'));
                         els.tip.attr('class', 'vertical ' + tipY + ' ' + h);
                     }
 
@@ -989,7 +984,14 @@
                     }
                 }
 
-                function moveMasks() {console.log('movemasks');
+                function moveMasks() {
+                  
+                  els.masks_top = angular.element($document[0].querySelectorAll('.nzTour-masks .top'));
+                  els.masks_right = angular.element($document[0].querySelectorAll('.nzTour-masks .right'));
+                  els.masks_bottom = angular.element($document[0].querySelectorAll('.nzTour-masks .bottom'));
+                  els.masks_left = angular.element($document[0].querySelectorAll('.nzTour-masks .left'));
+                  els.masks_center = angular.element($document[0].querySelectorAll('.nzTour-masks .center'));
+                  
                     if (!els.target) {
                         els.masks_top.css({
                             height: config.mask.visibleOnNoTarget ? '100%' : '0px'
