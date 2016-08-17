@@ -672,7 +672,7 @@
 
                     var newScrollTop = findScrollTop();
                     var d = $q.defer();
-                    if (!newScrollTop) {
+                    if (newScrollTop === false) {
                         d.resolve();
                     } else {
                       scrollTo(els.scroll[0], newScrollTop, scrolling ? 0 : config.animationDuration, d)
@@ -758,7 +758,7 @@
                     return $q.when(null);
 
                     // Placement Priorities
-                    function bottom() {console.log('placing bottom,');
+                    function bottom() {
                         // Can Below?
                         if (dims.target.margins.offset.fromBottom > maxHeight) {
                             // Can Centered?
