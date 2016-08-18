@@ -14,17 +14,18 @@
     "README.md",
     "assets",
     "**/.*",
-    "node_modules",
-    "test",
-    "tests",
-    "bower_components"
+    "example",
+    "src",
+    "gulpfile.js",
+    "package.json"
   ],
   "dependencies": {
-    "angular": "1.5.7"
+    "angular": "1.5.x"
   },
-  "homepage": "https://github.com/nozzle/nzTour",
+  "homepage": "https://github.com/semos/nzTour",
   "authors": [
-    "tannerlinsley"
+    "tannerlinsley",
+    "sgaillard"
   ],
   "keywords": [
     "tour",
