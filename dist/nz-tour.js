@@ -494,12 +494,12 @@
                         delta = e.wheelDelta;
                     }
                     var up = delta > 0;
-                    var scrollTop = els.content.scrollTop();
+                    var scrollTop = els.content[0].scrollTop;
 
                     if (up && !scrollTop) {
                         return prevent(e);
                     }
-                    if (!up && (els.innerContent.height() - els.content.height() == scrollTop)) {
+                    if (!up && (els.innerContent[0].offsetHeight - els.content[0].offsetHeight == scrollTop)) {
                         return prevent(e);
                     }
                 }
