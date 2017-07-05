@@ -1,7 +1,7 @@
 (function() {
-    var module = angular.module('nzTour', []);
+    var nzTour = angular.module('nzTour', [])
 
-    module.factory('nzTour', function($q, $rootScope, $compile, $timeout, $document) {
+    .factory('nzTour', function($q, $rootScope, $compile, $timeout, $document) {
 
         var service = $rootScope.$new();
 
@@ -256,9 +256,9 @@
                 if (callNow) func.apply(context, args);
             };
         }
-    });
+    })
 
-    module.directive('nzTour', function($q, $compile, $document, $timeout, $window) {
+    .directive('nzTour', function($q, $compile, $document, $timeout, $window) {
         return {
             template: [
                 '<div id="nzTour-box-wrap" style="transition:all 400ms ease;">',
@@ -494,12 +494,12 @@
                         delta = e.wheelDelta;
                     }
                     var up = delta > 0;
-                    var scrollTop = els.content.scrollTop();
+                    var scrollTop = els.content[0].scrollTop;
 
                     if (up && !scrollTop) {
                         return prevent(e);
                     }
-                    if (!up && (els.innerContent.height() - els.content.height() == scrollTop)) {
+                    if (!up && (els.innerContent[0].offsetHeight - els.content[0].offsetHeight == scrollTop)) {
                         return prevent(e);
                     }
                 }
@@ -1046,7 +1046,9 @@
                 }
             }
         };
-    });
+    })
+
+    .name;
 
     function extendDeep(dst) {
         angular.forEach(arguments, function(obj) {
@@ -1142,4 +1144,15 @@
         // it's time to fire the callback
         return callback(event);
     }
+
+    if (typeof exports !== 'undefined') {
+      if (typeof module !== 'undefined' && module.exports) {
+        exports = module.exports = nzTour;
+      }
+      exports.nzTour = nzTour;
+    } 
+    else {
+      root.nzTour = nzTour;
+    }
+
 })();
